@@ -272,6 +272,13 @@ if gui == '' then
 	writefile('velo/profiles/gui.txt', gui);
 end;
 
+-- Fall back to the default GUI when the selected one is missing (e.g. a stale
+-- theme name like 'old' that no longer ships) so the client always boots.
+if not isfile('velo/guis/'..gui..'.lua') then
+	gui = 'new';
+	writefile('velo/profiles/gui.txt', gui);
+end;
+
 local data: table? = {
     	userid = tostring(lplr.UserId),
     	username = lplr.Name
@@ -306,6 +313,15 @@ if not isfolder("velo/profiles") then
 end;
 
 veloc = loadstring(downloadFile('velo/guis/'..gui..'.lua'), 'gui')();
+if not veloc then
+	-- Selected GUI failed to load (missing/corrupt): repair the saved theme and
+	-- boot the default GUI instead of leaving the client with nothing.
+	gui = 'new';
+	pcall(function()
+		writefile('velo/profiles/gui.txt', gui);
+	end);
+	veloc = loadstring(downloadFile('velo/guis/'..gui..'.lua'), 'gui')();
+end;
 shared.veloc = veloc;
 
 if not shared.VeloIndependent then

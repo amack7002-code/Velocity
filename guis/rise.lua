@@ -2843,7 +2843,7 @@ scaleslider = mainapi.Categories.Main:CreateSlider({
 })
 mainapi.Categories.Main:CreateDropdown({
 	Name = 'GUI Theme',
-	List = {'rise', 'new', 'old'},
+	List = {'rise', 'new'},
 	Function = function(val, mouse)
 		if mouse then
 			writefile('velo/profiles/gui.txt', val)
