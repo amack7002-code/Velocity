@@ -120,9 +120,9 @@ local themecolors = {
 }
 
 local getcustomassets = {
-	['cat67/assets/rise/slice.png'] = 'rbxasset://risesix/slice.png',
-	['cat67/assets/rise/blur.png'] = 'rbxasset://risesix/blur.png',
-	['cat67/assets/new/blur.png'] = 'rbxassetid://14898786664',
+	['velo/assets/rise/slice.png'] = 'rbxasset://risesix/slice.png',
+	['velo/assets/rise/blur.png'] = 'rbxasset://risesix/blur.png',
+	['velo/assets/new/blur.png'] = 'rbxassetid://14898786664',
 }
 
 local isfile = isfile or function(file)
@@ -147,7 +147,7 @@ local function addBlur(parent)
 	blur.Size = UDim2.new(1, 42, 1, 42)
 	blur.Position = UDim2.fromOffset(-24, -15)
 	blur.BackgroundTransparency = 1
-	blur.Image = getcustomasset('cat67/assets/new/blur.png')
+	blur.Image = getcustomasset('velo/assets/new/blur.png')
 	blur.ScaleType = Enum.ScaleType.Slice
 	blur.SliceCenter = Rect.new(44, 38, 804, 595)
 	blur.Parent = parent
@@ -184,13 +184,15 @@ local function addMaid(object)
 end
 
 local function checkKeybinds(compare, target, key)
-	if table.find(target, key) then
-		for _, v in target do
-			if not table.find(compare, v) then
-				return false
+	if type(target) == 'table' then
+		if table.find(target, key) then
+			for _, v in target do
+				if not table.find(compare, v) then
+					return false
+				end
 			end
+			return true
 		end
-		return true
 	end
 
 	return false
@@ -244,13 +246,16 @@ local function downloadFile(path, func)
 	if not isfile(path) then
 		createDownloader(path)
 		local suc, res = pcall(function()
-			return game:HttpGet('https://raw.githubusercontent.com/amack7002-codede/CatV6/'..readfile('cat67/profiles/commit.txt')..'/'..select(1, path:gsub('cat67/', '')), true)
+			if path:find('velo/assets/rise/', 1, true) then
+				return game:HttpGet('https://raw.githubusercontent.com/amack7002-code/Catv67/main/'..select(1, path:gsub('velo/', '')), true)
+			end
+			return game:HttpGet('https://raw.githubusercontent.com/amack7002-code/Velocity/'..readfile('velo/profiles/commit.txt')..'/'..select(1, path:gsub('velo/', '')), true)
 		end)
 		if not suc or res == '404: Not Found' then
 			error(res)
 		end
 		if path:find('.lua') then
-			res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.\n'..res
+			res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after velocity updates.\n'..res
 		end
 		writefile(path, res)
 	end
@@ -329,21 +334,21 @@ end
 
 local function writeFont()
 	if not assetfunction then return 'rbxasset://fonts/productsans.json' end
-	writefile('cat67/assets/rise/risefont.json', httpService:JSONEncode({
+	writefile('velo/assets/rise/risefont.json', httpService:JSONEncode({
 		name = 'ProductSans',
 		faces = {
-			{style = 'normal', assetId = getcustomasset('cat67/assets/rise/SF-Pro-Rounded-Light.otf'), name = 'Light', weight = 300},
-			{style = 'normal', assetId = getcustomasset('cat67/assets/rise/SF-Pro-Rounded-Regular.otf'), name = 'Regular', weight = 400},
-			{style = 'normal', assetId = getcustomasset('cat67/assets/rise/SF-Pro-Rounded-Medium.otf'), name = 'Medium', weight = 500},
-			{style = 'normal', assetId = getcustomasset('cat67/assets/rise/Icon-1.ttf'), name = 'Icon1', weight = 600},
-			{style = 'normal', assetId = getcustomasset('cat67/assets/rise/Icon-3.ttf'), name = 'Icon3', weight = 800}
+			{style = 'normal', assetId = getcustomasset('velo/assets/rise/SF-Pro-Rounded-Light.otf'), name = 'Light', weight = 300},
+			{style = 'normal', assetId = getcustomasset('velo/assets/rise/SF-Pro-Rounded-Regular.otf'), name = 'Regular', weight = 400},
+			{style = 'normal', assetId = getcustomasset('velo/assets/rise/SF-Pro-Rounded-Medium.otf'), name = 'Medium', weight = 500},
+			{style = 'normal', assetId = getcustomasset('velo/assets/rise/Icon-1.ttf'), name = 'Icon1', weight = 600},
+			{style = 'normal', assetId = getcustomasset('velo/assets/rise/Icon-3.ttf'), name = 'Icon3', weight = 800}
 		}
 	}))
-	return getcustomasset('cat67/assets/rise/risefont.json')
+	return getcustomasset('velo/assets/rise/risefont.json')
 end
 
 if inputService.TouchEnabled then
-	writefile('cat67/profiles/gui.txt', 'new')
+	writefile('velo/profiles/gui.txt', 'new')
 	return
 end
 
@@ -355,7 +360,7 @@ do
 	uipallet.FontIcon1 = Font.new(risefont, Enum.FontWeight.SemiBold)
 	uipallet.FontIcon3 = Font.new(risefont, Enum.FontWeight.ExtraBold)
 
-	local res = isfile('cat67/profiles/color.txt') and loadJson('cat67/profiles/color.txt')
+	local res = isfile('velo/profiles/color.txt') and loadJson('velo/profiles/color.txt')
 	if res then
 		uipallet.Main = res.Main and Color3.fromRGB(unpack(res.Main)) or uipallet.Main
 		uipallet.Text = res.Text and Color3.fromRGB(unpack(res.Text)) or uipallet.Text
@@ -1198,8 +1203,8 @@ components = {
 					if ind then
 						if val ~= 'default' then
 							table.remove(mainapi.Profiles, ind)
-							if isfile('cat67/profiles/'..val..mainapi.Place..'.txt') and delfile then
-								delfile('cat67/profiles/'..val..mainapi.Place..'.txt')
+							if isfile('velo/profiles/'..val..mainapi.Place..'.txt') and delfile then
+								delfile('velo/profiles/'..val..mainapi.Place..'.txt')
 							end
 						end
 					else
@@ -1768,7 +1773,7 @@ function mainapi:CreateCategory(categorysettings)
 		addMaid(moduleapi)
 
 		function moduleapi:SetBind(tab)
-			if tab.Mobile then
+			if type(tab) ~= 'table' or tab.Mobile then
 				return
 			end
 
@@ -2298,8 +2303,8 @@ function mainapi:Load(skipgui, profile)
 	local guidata = {}
 	local savecheck = true
 
-	if isfile('cat67/profiles/'..game.GameId..'.gui.txt') then
-		guidata = loadJson('cat67/profiles/'..game.GameId..'.gui.txt')
+	if isfile('velo/profiles/'..game.GameId..'.gui.txt') then
+		guidata = loadJson('velo/profiles/'..game.GameId..'.gui.txt')
 		if not guidata then
 			guidata = {Categories = {}}
 			self:CreateNotification('Vape', 'Failed to load GUI settings.', 10, 'alert')
@@ -2328,8 +2333,8 @@ function mainapi:Load(skipgui, profile)
 	}}
 	--self.Categories.Profiles:ChangeValue()
 
-	if isfile('cat67profiles/'..self.Profile..self.Place..'.txt') then
-		local savedata = loadJson('cat67/profiles/'..self.Profile..self.Place..'.txt')
+	if isfile('velo/profiles/'..self.Profile..self.Place..'.txt') then
+		local savedata = loadJson('velo/profiles/'..self.Profile..self.Place..'.txt')
 		if not savedata then
 			savedata = {
 				Categories = {},
@@ -2450,8 +2455,8 @@ function mainapi:Save(newprofile)
 		}
 	end
 
-	writefile('cat67/profiles/'..game.GameId..'.gui.txt', httpService:JSONEncode(guidata))
-	writefile('cat67/profiles/'..self.Profile..self.Place..'.txt', httpService:JSONEncode(savedata))
+	writefile('velo/profiles/'..game.GameId..'.gui.txt', httpService:JSONEncode(guidata))
+	writefile('velo/profiles/'..self.Profile..self.Place..'.txt', httpService:JSONEncode(savedata))
 end
 
 function mainapi:SaveOptions(object, savedoptions)
@@ -2498,9 +2503,9 @@ function mainapi:Uninject()
 	table.clear(mainapi.Connections)
 	table.clear(mainapi.Libraries)
 	loopClean(mainapi)
-	shared.vape = nil
-	shared.vapereload = nil
-	shared.VapeIndependent = nil
+	shared.veloc = nil
+	shared.veloreload = nil
+	shared.VeloIndependent = nil
 end
 
 gui = Instance.new('ScreenGui')
@@ -2841,12 +2846,12 @@ mainapi.Categories.Main:CreateDropdown({
 	List = {'rise', 'new', 'old'},
 	Function = function(val, mouse)
 		if mouse then
-			writefile('cat67/profiles/gui.txt', val)
-			shared.vapereload = true
-			if shared.VapeDeveloper then
-				loadstring(readfile('cat67/init.lua'), 'init')()
+			writefile('velo/profiles/gui.txt', val)
+			shared.veloreload = true
+			if shared.VeloDeveloper then
+				loadstring(readfile('velo/loader.lua'), 'loader')()
 			else
-				loadstring(game:HttpGet('https://raw.githubusercontent.com/amack7002-code/CatV6/'..readfile('cat67/profiles/commit.txt')..'/init.lua', true))()
+				loadstring(game:HttpGet('https://raw.githubusercontent.com/amack7002-code/Velocity/'..readfile('velo/profiles/commit.txt')..'/loader.lua', true))()
 			end
 		end
 	end
@@ -2870,11 +2875,11 @@ mainapi.RainbowUpdateSpeed = mainapi.Categories.Main:CreateSlider({
 mainapi.Categories.Main:CreateButton({
 	Name = 'Reinject',
 	Function = function()
-		shared.vapereload = true
-		if shared.VapeDeveloper then
-			loadstring(readfile('cat67/init.lua'), 'init')()
+		shared.veloreload = true
+		if shared.VeloDeveloper then
+			loadstring(readfile('velo/loader.lua'), 'loader')()
 		else
-			loadstring(game:HttpGet('https://raw.githubusercontent.com/amack7002-code/CatV6/'..readfile('cat67/profiles/commit.txt')..'/init.lua', true))()
+			loadstring(game:HttpGet('https://raw.githubusercontent.com/amack7002-code/Velocity/'..readfile('velo/profiles/commit.txt')..'/loader.lua', true))()
 		end
 	end
 })
@@ -3188,7 +3193,7 @@ function mainapi:UpdateTextGUI(afterload)
 		for i, v in mainapi.Modules do
 			if v.Enabled or table.find(found, i) then
 				if interfaceshow.Value == 'Exclude render' and v.Category == 'Render' then continue end
-				if interfaceshow.Value == 'Only bound' and #v.Bind <= 0 then continue end
+				if interfaceshow.Value == 'Only bound' and (type(v.Bind) ~= 'table' or #v.Bind <= 0) then continue end
 				if i == 'RiseInterface' then continue end
 				local holder = Instance.new('Frame')
 				holder.Name = i
@@ -3230,7 +3235,7 @@ function mainapi:UpdateTextGUI(afterload)
 					holderline.Size = UDim2.fromOffset(2, 18)
 					holderline.Position = UDim2.new(1, 0, 0, 2)
 					holderline.BackgroundTransparency = 1
-					holderline.Image = getcustomasset('cat67/assets/rise/slice.png')
+					holderline.Image = getcustomasset('velo/assets/rise/slice.png')
 					holderline.ImageColor3 = uipallet.MainColor
 					holderline.ZIndex = -1
 					holderline.Parent = holderbackground
