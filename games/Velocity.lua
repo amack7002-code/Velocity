@@ -2449,16 +2449,6 @@ run(function()
 	local Particles: table?, Boxes: table? = {}, {}
 	local anims: any, AnimDelay: any, AnimTween: any, armC0: any = vape.Libraries.auraanims, tick()
 	local AttackRemote: any = {FireServer = function() end};
-	local Safety: table = {["Value"] = 'Blatant'};
-	local Missing: table = {};
-	local BurstPosition: Vector3? = nil;
-	-- [Safety] Human-like CPS bounds for close-range swings (Legit mode uses the server's own rate).
-	local function localcps(): number
-		if Safety.Value == 'Legit' then
-			return math.max(ChargeTime.Value, 0.1);
-		end;
-		return math.max(math.random(7, 14) / 10, 0.05);
-	end;
 	task.spawn(function()
 		AttackRemote = bedwars.Client:Get(remotes.AttackEntity).instance;
 	end);
@@ -2471,18 +2461,6 @@ run(function()
 		if GUI["Enabled"] then
 			if bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN) then return false; end;
 		end;
-		-- [Safety] Never attack teammates unless they are the last players alive.
-		if Safety.Value ~= 'Blatant' then
-			local myTeam: any = lplr.Team;
-			if myTeam then
-				local teamCount: number = #myTeam:GetPlayers();
-				if teamCount > 1 and teamCount < #playersService:GetPlayers() then
-					Targets.Players["Enabled"] = false;
-					Targets.NPCs["Enabled"] = false;
-					return false;
-				end;
-			end;
-		end;
 
 		local sword: any = Limit["Enabled"] and store.hand or store.tools.sword;
 		if not sword or not sword.tool then return false; end;
@@ -2494,10 +2472,6 @@ run(function()
 		if LegitAura["Enabled"] then
 			if (tick() - bedwars.SwordController.lastSwing) > 0.2 then return false; end;
 		end;
-		-- [Safety] In Legit mode only act while the local player is actually swinging.
-		if Safety.Value == 'Legit' and not LegitAura["Enabled"] then
-			if (tick() - bedwars.SwordController.lastSwing) > 0.2 then return false; end;
-		end;
 		return sword, meta;
 	end;
 	local killaurarangecirclepart: Instance? = nil;
@@ -2505,7 +2479,6 @@ run(function()
 	local killauracolor: table = {};
 	Killaura = vape.Categories.Blatant:CreateModule({
 		["Name"] = 'Killaura',
-		["Tooltip"] = 'Attack players around you\nwithout aiming at them.\nSafety Mode: Legit = CPS/aim limits, no teammates, swing-only sounds. Blatant+ = faster close-range swings with configurable misses.',
 		["Function"] = function(callback: boolean): void
 			if callback then
 				if inputService.TouchEnabled then
@@ -2612,7 +2585,7 @@ run(function()
 							local localfacing: Vector3? = entitylib.character.RootPart.CFrame.LookVector * Vector3.new(1, 0, 1);
 
 							for _: any, v: any in plrs do
-								if workspace:GetServerTimeNow() - bedwars.SwordController.lastAttack < localcps() then continue end				
+								if workspace:GetServerTimeNow() - bedwars.SwordController.lastAttack < ChargeTime.Value then continue end				
 								local delta: number? = (v.RootPart.Position - selfpos);
 								local angle: number? = math.acos(localfacing:Dot((delta * Vector3.new(1, 0, 1)).Unit));
 								if angle > (math.rad(AngleSlider["Value"]) / 2) then continue; end;
@@ -2626,7 +2599,7 @@ run(function()
 								if not Attacking then
 									Attacking = true;
 									store.KillauraTarget = v;
-									if not Swing["Enabled"] and AnimDelay <= tick() and not LegitAura["Enabled"] and Safety.Value ~= 'Legit' then
+									if not Swing["Enabled"] and AnimDelay <= tick() and not LegitAura["Enabled"] then
 										AnimDelay = tick() + (meta.sword.respectAttackSpeedForEffects and meta.sword.attackSpeed or 0.25);
 										bedwars.SwordController:playSwordEffect(meta, false);
 										if meta.displayName:find(' Scythe') then 
@@ -2644,11 +2617,6 @@ run(function()
 								local actualRoot: any = v.Character.PrimaryPart;
 								if actualRoot then
 									local dir: any = CFrame.lookAt(selfpos, actualRoot.Position).LookVector;
-									local jitterpos: Vector3 = actualRoot.Position;
-									if Safety.Value == 'Legit' and delta.Magnitude > 14 then
-										-- [Safety] Far targets get a humanized miss offset inside the server's 3-stud tolerance.
-										jitterpos += Vector3.new(math.random() - 0.5, (math.random() - 0.5) * 0.4, math.random() - 0.5) * (delta.Magnitude - 14);
-									end;
 									local pos: any = selfpos + dir * math.max(delta.Magnitude - 14.399, 0);
 									swingCooldown = tick();
 									bedwars.SwordController.lastAttack = workspace:GetServerTimeNow()
@@ -2656,17 +2624,9 @@ run(function()
 									lastSwingServerTimeDelta = workspace:GetServerTimeNow() - lastSwingServerTime
                                     					lastSwingServerTime = workspace:GetServerTimeNow()
 									store.attackReach = (delta.Magnitude * 100) // 1 / 100;
-									-- [Safety] Blatant+ occasionally misses outright, like a real player.
-									if Safety.Value == 'Blatant+' and math.random(1, 100) > Missing.Value then
-										BurstPosition = nil;
-										continue;
-									end;
 									store.attackReachUpdate = tick() + 1;
 
-									if Safety.Value == 'Blatant+' and delta.Magnitude < 14.4 then
-										-- [Safety] Burst: let the server see two swings within one tick, like real clickers.
-										BurstPosition = actualRoot.Position;
-									elseif delta.Magnitude < 14.4 and ChargeTime["Value"] > 0.11 then
+									if delta.Magnitude < 14.4 and ChargeTime["Value"] > 0.11 then
 										AnimDelay = tick();
 									end;
 
@@ -2680,28 +2640,10 @@ run(function()
 												cameraPosition = {value = pos},
 												cursorDirection = {value = dir}
 											},
-											targetPosition = {value = jitterpos},
+											targetPosition = {value = actualRoot.Position},
 											selfPosition = {value = pos}
 										}
 									});
-									-- [Safety] Blatant+ replays the swing at the target's previous position, mimicking ping / click spam.
-									if Safety.Value == 'Blatant+' and BurstPosition then
-										AttackRemote:FireServer({
-											weapon = sword.tool,
-											chargedAttack = {chargeRatio = 0},
-											lastSwingServerTimeDelta = lastSwingServerTimeDelta,
-											entityInstance = v.Character,
-											validate = {
-												raycast = {
-													cameraPosition = {value = pos},
-													cursorDirection = {value = dir}
-												},
-												targetPosition = {value = BurstPosition},
-												selfPosition = {value = pos}
-											}
-										});
-										BurstPosition = nil;
-									end;
 								end;
 							end;
 						end;
@@ -2731,9 +2673,8 @@ run(function()
 				        killaurarangecirclepart:Destroy();
 				        killaurarangecirclepart = nil;
 				end;
-			store.KillauraTarget = nil
-			BurstPosition = nil;
-			for _, v in Boxes do
+				store.KillauraTarget = nil
+				for _, v in Boxes do
 					v.Adornee = nil;
 				end;
 				for _, v in Particles do
@@ -2762,7 +2703,7 @@ run(function()
 		["Players"] = true, 
 		["NPCs"] = true
 	});
-	local methods: table = {'Damage', 'Distance', 'Threat', 'Kit', 'Health', 'Angle'}
+	local methods: table = {'Damage', 'Distance'}
 	for i in sortmethods do
 		if not table.find(methods, i) then
 			table.insert(methods, i);
@@ -2849,22 +2790,6 @@ run(function()
 	Mouse = Killaura:CreateToggle({["Name"] = 'Require mouse down'})
 	Swing = Killaura:CreateToggle({["Name"] = 'No Swing'})
 	GUI = Killaura:CreateToggle({["Name"] = 'GUI check'})
-	Safety = Killaura:CreateDropdown({
-		["Name"] = 'Safety Mode',
-		["List"] = {'Blatant', 'Legit', 'Blatant+'},
-		["Tooltip"] = 'Blatant: unchanged behavior. Legit: server-rate swings, no teammates, swing-only sounds, jittered long-range hits. Blatant+: 0.7-1.4 CPS close-range with burst swings and a configurable miss chance.',
-		["Function"] = function(callback: boolean): void
-			Missing.Object.Visible = callback == 'Blatant+';
-		end;
-	})
-	Missing = Killaura:CreateSlider({
-		["Name"] = 'Miss chance %',
-		["Min"] = 0,
-		["Max"] = 100,
-		["Default"] = 15,
-		["Darker"] = true,
-		["Visible"] = false
-	})
 	Killaura:CreateToggle({
 		["Name"] = 'Show target',
 		["Function"] = function(callback: boolean): void
@@ -10815,7 +10740,6 @@ velo.run(function()
         ["Function"] = function() end
     })
 end)
-
 
 
 
