@@ -2762,7 +2762,7 @@ run(function()
 		["Players"] = true, 
 		["NPCs"] = true
 	});
-	local methods: table = {'Damage', 'Distance'}
+	local methods: table = {'Damage', 'Distance', 'Threat', 'Kit', 'Health', 'Angle'}
 	for i in sortmethods do
 		if not table.find(methods, i) then
 			table.insert(methods, i);
