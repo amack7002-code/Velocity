@@ -801,7 +801,7 @@ run(function()
 						end
 	
 						if switched then
-							skywars.Remotes[remotes.updateActiveItem](store.hand.Name)
+							skywars.Remotes[remotes.updateActiveItem]:fire(store.hand.Name)
 						end
 					end
 	
@@ -1206,7 +1206,7 @@ run(function()
 									FireDelays[item] = tick() + 0.5
 									skywars.Remotes[remotes.updateActiveItem]:fire(item.Name)
 									skywars.Remotes[remotes.chargeBow]:fire(CFrame.new(offsetpos.Position, calc).LookVector, 1)
-									skywars.Remotes[remotes.updateActiveItem](store.hand.Name) 
+									skywars.Remotes[remotes.updateActiveItem]:fire(store.hand.Name) 
 									break
 								end
 							end
