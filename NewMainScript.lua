@@ -25,15 +25,15 @@
         - Xylex/7GrandDad - developer / organizer
 ]]--
 
-local isfile: (string) -> boolean = isfile or function(file: string): boolean
-    	local suc: boolean, res: string? = pcall(function(): string? return readfile(file) end);
+local isfile = isfile or function(file)
+    	local suc, res = pcall(function() return readfile(file) end);
     	return suc and res ~= nil;
 end;
-local delfile: (string) -> () = delfile or function(file: string): () writefile(file, "") end;
+local delfile = delfile or function(file) writefile(file, "") end;
 
-local function downloadFile(path: string, func: ((string) -> any)?): string
+local function downloadFile(path, func)
 		if not isfile(path) then
-				local suc: boolean, res: string? = pcall(function(): string
+				local suc, res = pcall(function()
 						return game:HttpGet('https://raw.githubusercontent.com/amack7002-code/Velocity/'..readfile('velo/profiles/commit.txt')..'/'..select(1, path:gsub('velo/', '')), true);
 				end);
 				if not suc or res == '404: Not Found' then
@@ -57,17 +57,17 @@ local function wipeFolder(path)
 		end;
 end;
 
-for _, folder: string in {'velo', 'velo/games', 'velo/profiles', 'velo/assets', 'velo/libraries', 'velo/guis', 'velo/sounds'} do
+for _, folder in {'velo', 'velo/games', 'velo/profiles', 'velo/assets', 'velo/libraries', 'velo/guis', 'velo/sounds'} do
 		if not isfolder(folder) then
 				makefolder(folder);
 		end;
 end;
 
 if not shared.VeloDeveloper then
-		local _, subbed: string = pcall(function(): string
+		local _, subbed = pcall(function()
 				return game:HttpGet('https://github.com/amack7002-code/Velocity');
 		end);
-		local commit: string? = subbed:find('currentOid');
+		local commit = subbed:find('currentOid');
 		commit = commit and subbed:sub(commit + 13, commit + 52) or nil;
 		commit = commit and #commit == 40 and commit or 'main';
 		local firstInstall = not isfile('velo/profiles/commit.txt')
