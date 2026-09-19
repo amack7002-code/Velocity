@@ -163,6 +163,7 @@ run(function()
 	local Killaura
 	local Targets
 	local Range
+	local CPS
 	local AngleSlider
 	local Max
 	local Mouse
@@ -178,6 +179,7 @@ run(function()
 	local meleePlayer = replicatedStorage.remoteInterface.interactions.meleePlayer
 	local autoBlock = replicatedStorage.remoteInterface.character.setShield
 	local blocking
+	local nextSwing = 0
 
 	local function getAttackData()
 		if Mouse.Enabled then
@@ -202,7 +204,7 @@ run(function()
 					local tool = getAttackData()
 					local attacked = {}
 					Attacking = false
-					if tool then
+					if tool and entitylib.isAlive then
 						local plrs = entitylib.AllPosition({
 							Range = Range.Value,
 							Wallcheck = Targets.Walls.Enabled or nil,
@@ -213,29 +215,43 @@ run(function()
 						})
 
 						if #plrs > 0 then
+							local selfPosition = entitylib.character.RootPart.Position
 							local localfacing = entitylib.character.RootPart.CFrame.LookVector * Vector3.new(1, 0, 1)
 							block(false)
 							for i, v in plrs do
-								local delta = (v.RootPart.Position - entitylib.character.RootPart.Position)
-								local angle = math.acos(localfacing:Dot((delta * Vector3.new(1, 0, 1)).Unit))
+								local delta = (v.RootPart.Position - selfPosition) * Vector3.new(1, 0, 1)
+								-- NaN-safe angle check: a flattened delta with no length means the
+								-- target sits directly above/below us, count it as facing. Otherwise
+								-- clamp the dot product so acos can never produce NaN.
+								local angle
+								if delta.Magnitude < 0.001 or localfacing.Magnitude < 0.001 then
+									angle = 0
+								else
+									angle = math.acos(math.clamp(localfacing.Unit:Dot(delta.Unit), -1, 1))
+								end
 								if angle > (math.rad(AngleSlider.Value) / 2) then continue end
 								table.insert(attacked, v)
 								targetinfo.Targets[v] = tick() + 1
 								Attacking = true
 
-								if v.NPC then
-									AIHit:FireServer(tool, aiController:GetServerModelFromClientModel(v.Character))
-								else
-									local key1, key2, key3 = Crypt.checkpublickeys()
-									if key1 and key2 and key3 then
-										meleePlayer:FireServer(tool, Crypt.crypt(key1, math.abs(v.Player.UserId) + key3, key2))
+								if nextSwing <= tick() then
+									if v.NPC then
+										AIHit:FireServer(tool, aiController:GetServerModelFromClientModel(v.Character))
+									else
+										local key1, key2, key3 = Crypt.checkpublickeys()
+										if key1 and key2 and key3 then
+											meleePlayer:FireServer(tool, Crypt.crypt(key1, math.abs(v.Player.UserId) + key3, key2))
+										end
 									end
 								end
-								break
 							end
 							block(true)
 						else
 							block(false)
+						end
+
+						if Attacking and nextSwing <= tick() then
+							nextSwing = tick() + (1 / CPS.GetRandomValue())
 						end
 					end
 
@@ -243,13 +259,14 @@ run(function()
 						v(attacked)
 					end
 
-					task.wait(Attacking and 0.25 or 0.03)
+					task.wait(0.03)
 				until not Killaura.Enabled
 			else
 				for i, v in KillauraFunctions do
 					v({})
 				end
 				Attacking = false
+				nextSwing = 0
 				block(false)
 			end
 		end,
@@ -258,6 +275,14 @@ run(function()
 	Targets = Killaura:CreateTargets({
 		Players = true,
 		NPCs = true
+	})
+	CPS = Killaura:CreateTwoSlider({
+		Name = 'Attacks per Second',
+		Min = 1,
+		Max = 20,
+		DefaultMin = 12,
+		DefaultMax = 12,
+		Tooltip = 'How many swings per second\n(time between swings = 1 / CPS)'
 	})
 	Range = Killaura:CreateSlider({
 		Name = 'Attack range',
